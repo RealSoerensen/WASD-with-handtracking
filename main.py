@@ -1,6 +1,8 @@
 import mediapipe as mp
 import cv2 as cv
 from pyKey import pressKey, releaseKey
+import time
+from multiprocessing import Process, Pipe
 
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
@@ -56,38 +58,58 @@ def gestures(hand):
         releaseKey("s")
 
 
-cap = cv.VideoCapture(0)
-with mp_hands.Hands(model_complexity=0, min_detection_confidence=0.7, min_tracking_confidence=0.5) as hands:
-    hand_output = 0
+def detection(p_input):
+    cap = cv.VideoCapture(0)
     while cap.isOpened():
-        success, image = cap.read()
-        if not success:
-            print("Ignoring empty camera frame.")
-            # If loading a video, use 'break' instead of 'continue'.
-            continue
+        start_time = time.time()
+        with mp_hands.Hands(model_complexity=0, min_detection_confidence=0.7, min_tracking_confidence=0.5) as hands:
+            success, image = cap.read()
+            if not success:
+                print("Ignoring empty camera frame.")
+                # If loading a video, use 'break' instead of 'continue'.
+                continue
 
-        # To improve performance, optionally mark the image as not writeable to
-        # pass by reference.
-        image.flags.writeable = False
-        image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
-        results = hands.process(image)
+            # To improve performance, optionally mark the image as not writeable to
+            # pass by reference.
+            image.flags.writeable = False
+            image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
+            results = hands.process(image)
 
-        # Draw the hand annotations on the image.
-        image.flags.writeable = True
-        image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
-        if results.multi_hand_landmarks:
-            for hand_landmark in results.multi_hand_landmarks:
-                gestures(hand_landmark.landmark)
+            # Draw the hand annotations on the image.
+            image.flags.writeable = True
+            image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
 
-                mp_drawing.draw_landmarks(
-                    image,
-                    hand_landmark,
-                    mp_hands.HAND_CONNECTIONS,
-                    mp_drawing_styles.get_default_hand_landmarks_style(),
-                    mp_drawing_styles.get_default_hand_connections_style())
+            if results.multi_hand_landmarks:
+                for hand_landmark in results.multi_hand_landmarks:
+                    gestures(hand_landmark.landmark)
+                    mp_drawing.draw_landmarks(
+                        image,
+                        hand_landmark,
+                        mp_hands.HAND_CONNECTIONS,
+                        mp_drawing_styles.get_default_hand_landmarks_style(),
+                        mp_drawing_styles.get_default_hand_connections_style())
 
+            print("FPS: ", 1.0 / (time.time() - start_time))
+            p_input.send(image)
+
+
+def show(p_output):
+    while True:
+        image = p_output.recv()
         # Flip the image horizontally for a selfie-view display.
         cv.imshow('WASD handtrack', cv.flip(image, 1))
         if cv.waitKey(5) & 0xFF == 27:
             break
-cap.release()
+
+
+if __name__ == "__main__":
+    # Pipes
+    p_output, p_input = Pipe()
+
+    # Creating processes
+    p1 = Process(target=detection, args=(p_input,))
+    p2 = Process(target=show, args=(p_output,))
+
+    # Starting processes
+    p1.start()
+    p2.start()
