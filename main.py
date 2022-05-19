@@ -18,41 +18,47 @@ def check_range(first_value, second_value):
 
 
 def gestures(hand):
-    thumptip_x, thumptip_y = (hand[mp_hands.HandLandmark.THUMB_TIP].x,
-                              hand[mp_hands.HandLandmark.THUMB_TIP].y)
+    thumptip_x, thumptip_y = (
+        hand[mp_hands.HandLandmark.THUMB_TIP].x,
+        hand[mp_hands.HandLandmark.THUMB_TIP].y,
+    )
 
-    indextip_x, indextip_y = (hand[mp_hands.HandLandmark.INDEX_FINGER_TIP].x,
-                              hand[mp_hands.HandLandmark.INDEX_FINGER_TIP].y)
+    indextip_x, indextip_y = (
+        hand[mp_hands.HandLandmark.INDEX_FINGER_TIP].x,
+        hand[mp_hands.HandLandmark.INDEX_FINGER_TIP].y,
+    )
 
-    midtip_x, midtip_y = (hand[mp_hands.HandLandmark.MIDDLE_FINGER_TIP].x,
-                          hand[mp_hands.HandLandmark.MIDDLE_FINGER_TIP].y)
+    midtip_x, midtip_y = (
+        hand[mp_hands.HandLandmark.MIDDLE_FINGER_TIP].x,
+        hand[mp_hands.HandLandmark.MIDDLE_FINGER_TIP].y,
+    )
 
-    ringtip_x, ringtip_y = (hand[mp_hands.HandLandmark.RING_FINGER_TIP].x,
-                            hand[mp_hands.HandLandmark.RING_FINGER_TIP].y)
+    ringtip_x, ringtip_y = (
+        hand[mp_hands.HandLandmark.RING_FINGER_TIP].x,
+        hand[mp_hands.HandLandmark.RING_FINGER_TIP].y,
+    )
 
-    pinkytip_x, pinkytip_y = (hand[mp_hands.HandLandmark.PINKY_TIP].x,
-                              hand[mp_hands.HandLandmark.PINKY_TIP].y)
+    pinkytip_x, pinkytip_y = (
+        hand[mp_hands.HandLandmark.PINKY_TIP].x,
+        hand[mp_hands.HandLandmark.PINKY_TIP].y,
+    )
 
-    if check_range(thumptip_x, indextip_x) and \
-            check_range(thumptip_y, indextip_y):
+    if check_range(thumptip_x, indextip_x) and check_range(thumptip_y, indextip_y):
         pressKey("a")
     else:
         releaseKey("a")
 
-    if check_range(thumptip_x, midtip_x) and \
-            check_range(thumptip_y, midtip_y):
+    if check_range(thumptip_x, midtip_x) and check_range(thumptip_y, midtip_y):
         pressKey("w")
     else:
         releaseKey("w")
 
-    if check_range(thumptip_x, ringtip_x) and \
-            check_range(thumptip_y, ringtip_y):
+    if check_range(thumptip_x, ringtip_x) and check_range(thumptip_y, ringtip_y):
         pressKey("d")
     else:
         releaseKey("d")
 
-    if check_range(thumptip_x, pinkytip_x) and \
-            check_range(thumptip_y, pinkytip_y):
+    if check_range(thumptip_x, pinkytip_x) and check_range(thumptip_y, pinkytip_y):
         pressKey("s")
     else:
         releaseKey("s")
@@ -62,7 +68,11 @@ def detection(p_input):
     cap = cv.VideoCapture(0)
     while cap.isOpened():
         start_time = time.time()
-        with mp_hands.Hands(model_complexity=0, min_detection_confidence=0.7, min_tracking_confidence=0.5) as hands:
+        with mp_hands.Hands(
+            model_complexity=0,
+            min_detection_confidence=0.7,
+            min_tracking_confidence=0.5,
+        ) as hands:
             success, image = cap.read()
             if not success:
                 print("Ignoring empty camera frame.")
@@ -87,7 +97,8 @@ def detection(p_input):
                         hand_landmark,
                         mp_hands.HAND_CONNECTIONS,
                         mp_drawing_styles.get_default_hand_landmarks_style(),
-                        mp_drawing_styles.get_default_hand_connections_style())
+                        mp_drawing_styles.get_default_hand_connections_style(),
+                    )
 
             print("FPS: ", 1.0 / (time.time() - start_time))
             p_input.send(image)
@@ -97,7 +108,7 @@ def show(p_output):
     while True:
         image = p_output.recv()
         # Flip the image horizontally for a selfie-view display.
-        cv.imshow('WASD handtrack', cv.flip(image, 1))
+        cv.imshow("WASD handtrack", cv.flip(image, 1))
         if cv.waitKey(5) & 0xFF == 27:
             break
 
